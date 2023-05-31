@@ -22,6 +22,7 @@ use evm_core::{
     Env, EvmResult, EVM,
 };
 use evm_methods::EVM_ELF;
+use log::info;
 use risc0_zkvm::{
     serde::{from_slice, to_vec},
     Executor, ExecutorEnv, FileSegmentRef,
@@ -39,6 +40,9 @@ struct Args {
 
     #[clap(short, long)]
     block_numb: Option<u64>,
+
+    #[clap(short, long)]
+    chain_id: Option<u64>,
 }
 
 #[tokio::main]
@@ -57,9 +61,10 @@ async fn main() {
         let numb = tx.block_number.unwrap();
         numb.as_u64() - 1
     };
-    println!("Running TX: 0x{:x} at block {}", tx_hash, block_numb);
+    info!("Running TX: 0x{:x} at block {}", tx_hash, block_numb);
 
     let mut env = Env::default();
+    env.cfg.chain_id = U256::from(args.chain_id.unwrap()).into();
     env.block.number = U256::from(block_numb).into();
     env.tx = evm_core::ether_trace::txenv_from_tx(tx);
     let trace_db = evm_core::ether_trace::TraceTx::new(client, Some(block_numb)).unwrap();
@@ -80,7 +85,7 @@ async fn main() {
 
     let zkdb = trace_db.create_zkdb();
 
-    println!("Running zkvm...");
+    info!("Running zkvm...");
     let env = ExecutorEnv::builder()
         .add_input(&to_vec(&env).unwrap())
         .add_input(&to_vec(&zkdb).unwrap())
@@ -98,6 +103,6 @@ async fn main() {
     let receipt = session.prove().unwrap();
 
     let res: EvmResult = from_slice(&receipt.journal).expect("Failed to deserialize EvmResult");
-    println!("exit reason: {:?}", res.exit_reason);
-    println!("state updates: {}", res.state.len());
+    info!("exit reason: {:?}", res.exit_reason);
+    info!("state updates: {}", res.state.len());
 }
