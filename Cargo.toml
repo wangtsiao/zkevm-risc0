@@ -1,0 +1,35 @@
+[package]
+name = "evm"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.0", features = ["derive"] }
+env_logger = "0.10"
+ethers-core = "2.0"
+ethers-providers = "2.0"
+evm-core = { path = "core", features = ["ethers"] }
+evm-methods = { path = "methods" }
+log = "0.4"
+risc0-zkvm = "0.15.1"
+serde = "1.0"
+tempfile = "3.5"
+tokio = "1.23"
+
+[features]
+cuda = ["risc0-zkvm/cuda"]
+metal = ["risc0-zkvm/metal"]
+
+# Always optimize; otherwise tests take excessively long.
+[profile.dev]
+opt-level = 3
+
+[profile.dev.build-override]
+opt-level = 3
+
+[profile.release]
+debug = 1
+lto = true
+
+[profile.release.build-override]
+opt-level = 3
